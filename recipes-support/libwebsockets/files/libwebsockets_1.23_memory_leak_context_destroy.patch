@@ -1,0 +1,56 @@
+From ed1cdbbd541683d47aa8a9aa32fcbed9a47111a6 Mon Sep 17 00:00:00 2001
+From: arnaudviala <arnaud.viala@gmail.com>
+Date: Fri, 7 Feb 2014 17:03:21 +0100
+Subject: [PATCH] Fix a possible memory leak in libwebsocket_context_destroy()
+ when compiled without extension support.
+
+Even without extension support :
+  All wsi sessions stored into lws_lookup[] SHOULD BE closed_and_freed.
+  The callback(reason=_PROTOCOL_DESTROY) SHOULD BE called.
+---
+ lib/libwebsockets.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/lib/libwebsockets.c b/lib/libwebsockets.c
+index 18b5009..64b5355 100644
+--- a/lib/libwebsockets.c
++++ b/lib/libwebsockets.c
+@@ -1209,10 +1209,11 @@ LWS_VISIBLE int lws_send_pipe_choked(struct libwebsocket *wsi)
+ LWS_VISIBLE void
+ libwebsocket_context_destroy(struct libwebsocket_context *context)
+ {
+-#ifndef LWS_NO_EXTENSIONS
+ 	int n;
++#ifndef LWS_NO_EXTENSIONS
+ 	int m;
+ 	struct libwebsocket_extension *ext;
++#endif /* ndef LWS_NO_EXTENSIONS */
+ 	struct libwebsocket_protocols *protocol = context->protocols;
+ 
+ #ifdef LWS_LATENCY
+@@ -1228,6 +1229,7 @@ LWS_VISIBLE int lws_send_pipe_choked(struct libwebsocket *wsi)
+ 		n--;
+ 	}
+ 
++#ifndef LWS_NO_EXTENSIONS
+ 	/*
+ 	 * give all extensions a chance to clean up any per-context
+ 	 * allocations they might have made
+@@ -1243,6 +1245,7 @@ LWS_VISIBLE int lws_send_pipe_choked(struct libwebsocket *wsi)
+ 								 NULL, NULL, 0);
+ 		ext++;
+ 	}
++#endif /* ndef LWS_NO_EXTENSIONS */
+ 
+ 	/*
+ 	 * inform all the protocols that they are done and will have no more
+@@ -1255,7 +1258,6 @@ LWS_VISIBLE int lws_send_pipe_choked(struct libwebsocket *wsi)
+ 		protocol++;
+ 	}
+ 
+-#endif
+ 
+ #if defined(WIN32) || defined(_WIN32)
+ #else
+-- 
+1.8.5.1

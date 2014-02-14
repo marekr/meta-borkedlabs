@@ -1,0 +1,29 @@
+From 361a428455d8cf16c1d4b8b9623f6004c5f3d737 Mon Sep 17 00:00:00 2001
+From: arnaudviala <arnaud.viala@gmail.com>
+Date: Fri, 7 Feb 2014 17:06:52 +0100
+Subject: [PATCH] Place lws_sigusr2() inside #ifdef LWS_OPENSSL_SUPPORT flags
+ because when compiling without SSL, 'gcc -Werror' command fails saying
+ lws_sigusr2 is defined but not used
+
+---
+ lib/libwebsockets.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/lib/libwebsockets.c b/lib/libwebsockets.c
+index 64b5355..5806d07 100644
+--- a/lib/libwebsockets.c
++++ b/lib/libwebsockets.c
+@@ -1814,9 +1814,11 @@ int user_callback_handle_rxflow(callback_function callback_function,
+  * This is just used to interrupt poll waiting
+  * we don't have to do anything with it.
+  */
++#ifdef LWS_OPENSSL_SUPPORT
+ static void lws_sigusr2(int sig)
+ {
+ }
++#endif
+ 
+ /**
+  * libwebsocket_create_context() - Create the websocket handler
+-- 
+1.8.5.1
